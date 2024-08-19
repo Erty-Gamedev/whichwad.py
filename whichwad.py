@@ -18,13 +18,11 @@ console = Console(theme=whichwad_theme)
 STEAM_PIPES = ['_addon', '_hd', '_downloads']
 WAD_SKIP_LIST: Final[List[str]] = [
     'cached',
-    'decals',
     'fonts',
     'gfx',
     'spraypaint',
     'tempdecal',
 ]
-SEARCH_ALL: Final[bool] = False
 
 
 app = typer.Typer()
@@ -48,9 +46,6 @@ def find_wad_files(modpath: Path) -> List[Path]:
 
     globs.extend(modpath.glob('*.wad'))
 
-    if SEARCH_ALL:
-        return globs
-    
     return [glob for glob in globs if glob.stem.lower() not in WAD_SKIP_LIST]
 
 def find_texture_in_wad(modpath: Path, texture: str) -> Union[Path, Literal[False]]:
