@@ -58,25 +58,32 @@ def find_texture_in_wad(modpath: Path, texture: str) -> Union[Path, Literal[Fals
     return False
 
 
+@app.command()
 def main(
         mod_path: Annotated[str, typer.Argument(
             help='path to the mod with the WAD files e.g. ".../steamapps/Half-Life/valve"',
             show_default=False)],
         texture: Annotated[str, typer.Argument(
-            help='texture to search for', show_default=False)]
+            help='texture(s) to search for, use ";" to delimit multiple textures',
+            show_default=False)],
         ) -> None:
 
     modpath = unsteampipe(Path(mod_path))
-    found_wad = find_texture_in_wad(modpath, texture)
 
-    if not found_wad:
+    textures = texture.split(';')
+
+    for tex in textures:
+        found_wad = find_texture_in_wad(modpath, tex)
+        tex = tex.upper()
+
+        if not found_wad:
+            console.print(
+                f"Texture {tex} not found in any WAD in [not bold]{modpath}[/not bold]",
+                style='error')
+            continue
+
         console.print(
-            f"Texture {texture} not found in any WAD in {modpath}",
-            style='error')
-        return
-
-    console.print(
-        f"Texture [warning]{texture}[/warning] found in [success]{found_wad}[/success]")
+            f"Texture [warning]{tex}[/warning] found in [success]{found_wad}[/success]")
 
 if __name__ == '__main__':
-    typer.run(main)
+    app()
