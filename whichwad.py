@@ -57,11 +57,7 @@ def find_texture_in_wad(modpath: Path, texture: str) -> Union[Path, Literal[Fals
     globs = find_wad_files(modpath)
 
     for glob in globs:
-        if not SEARCH_ALL and glob.stem.lower() in WAD_SKIP_LIST:
-            continue
-        
-        reader = Wad3Reader(glob)
-        if texture in reader:
+        if texture in Wad3Reader(glob):
             return glob
     
     return False
