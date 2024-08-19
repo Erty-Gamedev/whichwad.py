@@ -81,7 +81,7 @@ def main(
             '--extract', '-e', help='extract the textures')] = False,
         output: Annotated[Path, typer.Option(
             '--output', '-o', help='output directory for extracted textures',
-            show_default=False, dir_okay=True, writable=True, file_okay=False)] = Path('.')
+            show_default=True, dir_okay=True, writable=True, file_okay=False)] = Path('extracted')
         ) -> None:
     """Find which WAD in the mod path contains the specified texture"""
 
