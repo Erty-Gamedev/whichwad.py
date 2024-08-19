@@ -55,12 +55,13 @@ def find_wad_files(modpath: Path) -> List[Path]:
 
     return [glob for glob in globs if glob.stem.lower() not in WAD_SKIP_LIST]
 
-def find_texture_in_wad(modpath: Path, texture: str) -> Union[Path, Literal[False]]:
+def find_texture_in_wad(modpath: Path, texture: str) -> Union[Wad3Reader, Literal[False]]:
     globs = find_wad_files(modpath)
 
     for glob in globs:
-        if texture in Wad3Reader(glob):
-            return glob
+        reader = Wad3Reader(glob)
+        if texture in reader:
+            return reader
     
     return False
 
@@ -76,12 +77,25 @@ def main(
         version: Annotated[Optional[bool], typer.Option(
             '--version', '-v', callback=show_version, is_eager=True,
             help='print application version', rich_help_panel=None)] = None,
+        extract: Annotated[bool, typer.Option(
+            '--extract', '-e', help='extract the textures')] = False,
+        output: Annotated[Path, typer.Option(
+            '--output', '-o', help='output directory for extracted textures',
+            show_default=False, dir_okay=True, writable=True, file_okay=False)] = Path('.')
         ) -> None:
     """Find which WAD in the mod path contains the specified texture"""
 
     if not mod_path.is_dir():
         console.print(f"{mod_path} is not a directory", style='error')
         raise typer.Exit(1)
+    
+    if extract and not output.exists():
+        create_dir = typer.confirm(f"{output.absolute()} does not exist. Create it?")
+        if not create_dir:
+            console.print('Output dir not created, aborted', style='error')
+            raise typer.Exit(2)
+        output.mkdir()
+        console.print(f"{output.absolute()} created", style='info')
 
     mod_path = unsteampipe(mod_path)
     textures = texture.split(';')
@@ -97,7 +111,13 @@ def main(
             continue
 
         console.print(
-            f"Texture [warning]{tex}[/warning] found in [success]{found_wad}[/success]")
+            f"Texture [warning]{tex}[/warning] found in [success]{found_wad.file}[/success]")
+        
+        if extract:
+            output_file = output / f"{tex}.bmp"
+            console.print(
+                f"Saving texture from {found_wad.file.name} to [bold]{output_file}[/bold]", style='info')
+            found_wad[tex.lower()].save(output_file)
 
 if __name__ == '__main__':
     app()
