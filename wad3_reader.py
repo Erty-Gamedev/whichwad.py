@@ -1,7 +1,7 @@
 from typing import Dict
 from pathlib import Path
-from PIL import Image
 from struct import unpack
+from bmpimage import BmpImage
 
 
 class InvalidFormatException(Exception): pass
@@ -36,9 +36,11 @@ class TextureEntry:
         self.mipoffset2 = unpack('<L', data[32:36])[0]
         self.mipoffset3 = unpack('<L', data[36:40])[0]
         self.basetexturedata = data[40:self.mipoffset1]
-        self.image: Image.Image = Image.frombytes(
-            'P', (self.width, self.height), self.basetexturedata, 'raw')
-        self.image.putpalette(data[-PALETTE_SIZE-2:-2])
+        self.image = BmpImage(
+            (self.width, self.height),
+            self.basetexturedata,
+            data[-PALETTE_SIZE-2:-2]
+        )
 
     def __str__(self):
         return self.name
@@ -47,9 +49,9 @@ class TextureEntry:
 class Wad3Reader:
     """
     Reads all the textures from the specified .wad package
-    as PIL Images with preserved indexed palette.
+    as 8BPP BMP images.
     The instance can be accessed as a dictionary that maps
-    texture name to its Image instance.
+    texture name to its BmpImage instance.
     """
 
     def __init__(self, file: Path):
@@ -91,5 +93,5 @@ class Wad3Reader:
     def __contains__(self, texture: str) -> bool:
         return texture.lower() in self.textures
 
-    def __getitem__(self, texture: str) -> Image.Image:
+    def __getitem__(self, texture: str) -> BmpImage:
         return self.textures[texture.lower()].image
