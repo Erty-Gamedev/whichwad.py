@@ -25,7 +25,7 @@ whichwad_theme = Theme({
     'error': 'bold red',
     'wad': 'grey42',
 })
-console = Console(theme=whichwad_theme)
+console = Console(theme=whichwad_theme, tab_size=2)
 
 
 app = typer.Typer()
@@ -93,17 +93,10 @@ def main(
         console.print(f"{mod_path} is not a directory", style='error')
         raise typer.Exit(1)
     
-    if extract and not output.exists():
-        confirm_create_dir = typer.confirm(f"{output.absolute()} does not exist. Create it?")
-        if not confirm_create_dir:
-            console.print('Output dir not created, aborted', style='error')
-            raise typer.Exit(2)
-        output.mkdir()
-        console.print(f"{output.absolute()} created", style='info')
-
     mod_path = unsteampipe(mod_path)
     globs = find_wad_files(mod_path)
     textures = texture.split(';')
+    all_found_wads: Dict[str, Dict[str, List[Wad3Reader]]] = {}
 
     for tex in textures:
         found_wads = find_texture_in_wad(globs, tex)
@@ -113,24 +106,36 @@ def main(
                 f"No texture names matching [cyan]'{tex}'[/cyan] not found in any WAD "\
                 f"in [not bold]{mod_path}[/not bold]", style='error', highlight=False)
             continue
+        
+        all_found_wads[tex] = found_wads
 
         console.print(
             f"[success]{len(found_wads)}[/success] texture names matching "\
-                f"[magenta]'{tex}'[/magenta] found:\n",
+                f"[magenta]'{tex}'[/magenta] found:",
             style='info', highlight=False)
 
         for match, wads in found_wads.items():
             console.print(
-                f"[warning]{match.upper()}[/warning] found in {len(wads)} WADs:",
+                f"\t[warning]{match.upper()}[/warning] found in {len(wads)} WADs:",
                 style='info')
             for wad in wads:
-                console.print(f"{wad.file}", style='wad')
+                console.print(f"\t{wad.file}", style='wad')
 
-        if not extract:
-            return
+    if not extract or not len(all_found_wads):
+        return
+    
+    console.print('')
+    
+    if not output.exists():
+        confirm_create_dir = typer.confirm(
+            f"{output.absolute()} does not exist. Create it?")
+        if not confirm_create_dir:
+            console.print('Output dir not created, aborted', style='error')
+            raise typer.Exit(2)
+        output.mkdir()
+        console.print(f"{output.absolute()} created", style='info')
 
-        console.print("\n")
-
+    for tex, found_wads in all_found_wads.items():
         for match, wads in found_wads.items():
             output_file = output / f"{match.upper()}.bmp"
 
@@ -142,8 +147,8 @@ def main(
                 continue
 
             console.print(
-                f"[warning]{match.upper()}[/warning] found in {len(wads)} WADs:",
-                style='info')
+                f"[warning]{match.upper()}[/warning] found in {len(wads)} WADs. It's time to choose:",
+                style='green', highlight=False)
             
             for wad in wads:
                 confirm_savetex = typer.confirm(f"Extract from {wad.file.name}?")
