@@ -28,7 +28,7 @@ whichwad_theme = Theme({
 console = Console(theme=whichwad_theme, tab_size=2)
 
 
-app = typer.Typer()
+app = typer.Typer(add_completion=False)
 
 
 def show_version(show: bool) -> None:
