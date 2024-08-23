@@ -1,21 +1,13 @@
-from typing import List, Final, Union, Literal, Optional
+from typing import List, Dict, Final, Optional
 from pathlib import Path
+import fnmatch
 import typer
 from typing_extensions import Annotated
 from rich.console import Console
 from rich.theme import Theme
 from wad3_reader import Wad3Reader
 
-__version__ = '1.0.0'
-
-whichwad_theme = Theme({
-    'success': 'bold green',
-    'info': 'dim cyan',
-    'warning': 'yellow',
-    'error': 'bold red',
-})
-console = Console(theme=whichwad_theme)
-
+__version__ = '1.1.0'
 
 STEAM_PIPES = ['_addon', '_hd', '_downloads']
 WAD_SKIP_LIST: Final[List[str]] = [
@@ -25,6 +17,15 @@ WAD_SKIP_LIST: Final[List[str]] = [
     'spraypaint',
     'tempdecal',
 ]
+
+whichwad_theme = Theme({
+    'success': 'bold green',
+    'info': 'dim cyan',
+    'warning': 'yellow',
+    'error': 'bold red',
+    'wad': 'grey42',
+})
+console = Console(theme=whichwad_theme)
 
 
 app = typer.Typer()
@@ -55,13 +56,18 @@ def find_wad_files(modpath: Path) -> List[Path]:
 
     return [glob for glob in globs if glob.stem.lower() not in WAD_SKIP_LIST]
 
-def find_texture_in_wad(globs: List[Path], texture: str) -> Union[Wad3Reader, Literal[False]]:
+def find_texture_in_wad(globs: List[Path], texture: str) -> Dict[str, List[Wad3Reader]]:
+    found_wads: Dict[str, List[Wad3Reader]] = {}
+    
     for glob in globs:
         reader = Wad3Reader(glob)
-        if texture in reader:
-            return reader
-    
-    return False
+        matches = fnmatch.filter(reader.textures.keys(), texture)
+        for match in matches:
+            if match not in found_wads:
+                found_wads[match] = []
+            found_wads[match].append(reader)
+
+    return found_wads
 
 
 @app.command(no_args_is_help=True)
@@ -88,8 +94,8 @@ def main(
         raise typer.Exit(1)
     
     if extract and not output.exists():
-        create_dir = typer.confirm(f"{output.absolute()} does not exist. Create it?")
-        if not create_dir:
+        confirm_create_dir = typer.confirm(f"{output.absolute()} does not exist. Create it?")
+        if not confirm_create_dir:
             console.print('Output dir not created, aborted', style='error')
             raise typer.Exit(2)
         output.mkdir()
@@ -100,23 +106,53 @@ def main(
     textures = texture.split(';')
 
     for tex in textures:
-        found_wad = find_texture_in_wad(globs, tex)
-        tex = tex.upper()
+        found_wads = find_texture_in_wad(globs, tex)
 
-        if not found_wad:
+        if not found_wads:
             console.print(
-                f"Texture {tex} not found in any WAD in [not bold]{mod_path}[/not bold]",
-                style='error')
+                f"No texture names matching [cyan]'{tex}'[/cyan] not found in any WAD "\
+                f"in [not bold]{mod_path}[/not bold]", style='error', highlight=False)
             continue
 
         console.print(
-            f"Texture [warning]{tex}[/warning] found in [success]{found_wad.file}[/success]")
-        
-        if extract:
-            output_file = output / f"{tex}.bmp"
+            f"[success]{len(found_wads)}[/success] texture names matching "\
+                f"[magenta]'{tex}'[/magenta] found:\n",
+            style='info', highlight=False)
+
+        for match, wads in found_wads.items():
             console.print(
-                f"Saving texture from {found_wad.file.name} to [bold]{output_file}[/bold]", style='info')
-            found_wad[tex.lower()].save(output_file)
+                f"[warning]{match.upper()}[/warning] found in {len(wads)} WADs:",
+                style='info')
+            for wad in wads:
+                console.print(f"{wad.file}", style='wad')
+
+        if not extract:
+            return
+
+        console.print("\n")
+
+        for match, wads in found_wads.items():
+            output_file = output / f"{match.upper()}.bmp"
+
+            if len(wads) == 1:
+                console.print(
+                    f"Saving texture from {wads[0].file.name} "\
+                    f"to [bold]{output_file}[/bold]", style='info')
+                wads[0][match.lower()].save(output_file)
+                continue
+
+            console.print(
+                f"[warning]{match.upper()}[/warning] found in {len(wads)} WADs:",
+                style='info')
+            
+            for wad in wads:
+                confirm_savetex = typer.confirm(f"Extract from {wad.file.name}?")
+                if confirm_savetex:
+                    console.print(
+                        f"Saving texture from {wad.file.name} "\
+                        f"to [bold]{output_file}[/bold]", style='info')
+                    wad[match.lower()].save(output_file)
+                    break
 
 if __name__ == '__main__':
     app()
