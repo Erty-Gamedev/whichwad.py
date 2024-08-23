@@ -19,6 +19,22 @@ python whichwad.py C:/Steam/steamapps/Half-Life/cstrike some_texture
 Multiple textures can be searched for at the same time by delimiting the
 texture names with a semicolon, e.g.: `my_texture1;+0_other_texture;!water_texture`
 
+### Pattern matching / wildcard search
+
+The *fnmatch* library is used to allow for UNIX filename pattern matching.
+
+| Pattern  | Match                              |
+| -------- | ---------------------------------- |
+| `*`      | matches everything                 |
+| `?`      | matches any single character       |
+| `[seq]`  | matches any character in *seq*     |
+| `[!seq]` | matches any character not in *seq* |
+
+*(From https://docs.python.org/3/library/fnmatch.html)*
+
+This way you can match any texture name beginning with *generic*
+by searching for "generic*".
+
 ### Extract textures
 
 Textures can also be extracted from the found WAD files using the `--extract` argument.
