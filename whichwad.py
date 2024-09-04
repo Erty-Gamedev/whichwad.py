@@ -56,11 +56,17 @@ def find_wad_files(modpath: Path) -> List[Path]:
 
     return [glob for glob in globs if glob.stem.lower() not in WAD_SKIP_LIST]
 
-def find_texture_in_wad(globs: List[Path], texture: str) -> Dict[str, List[Wad3Reader]]:
+def find_texture_in_wad(
+        globs: List[Path],
+        texture: str,
+        readers: Dict[str, Wad3Reader]) -> Dict[str, List[Wad3Reader]]:
     found_wads: Dict[str, List[Wad3Reader]] = {}
     
     for glob in globs:
-        reader = Wad3Reader(glob)
+        if glob not in readers:
+            readers[glob] = Wad3Reader(glob)
+        reader = readers[glob]
+
         matches = fnmatch.filter(reader.textures.keys(), texture)
         for match in matches:
             if match not in found_wads:
@@ -97,9 +103,10 @@ def main(
     globs = find_wad_files(mod_path)
     textures = texture.split(';')
     all_found_wads: Dict[str, Dict[str, List[Wad3Reader]]] = {}
+    readers: Dict[str, Wad3Reader] = {}
 
     for tex in textures:
-        found_wads = find_texture_in_wad(globs, tex)
+        found_wads = find_texture_in_wad(globs, tex, readers)
 
         if not found_wads:
             console.print(
