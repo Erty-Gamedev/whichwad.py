@@ -1,11 +1,11 @@
-from typing import List, Tuple, Final
+from typing import Final, Literal
 from pathlib import Path
 from itertools import batched
 
-ENDIANESS: Final[str] = 'little'
+ENDIANESS: Final[Literal['little']] = 'little'
 
 class BmpImage:
-    def __init__(self, dimensions: Tuple[int, int], data: bytes, palette: bytes) -> None:
+    def __init__(self, dimensions: tuple[int, int], data: bytes, palette: bytes) -> None:
         self.dimensions = dimensions
         self.data = data
         self.palette = palette
@@ -14,8 +14,8 @@ class BmpImage:
         """WAD pixel data is stored top-down, left-to-right,
         while BMP pixel is stored bottom-up, left-to-right."""
 
-        rows: List[Tuple[int, ...]] = list(batched(list(self.data), self.dimensions[1]))
-        rows = reversed(rows)
+        rows: list[tuple[int, ...]] = list(batched(list(self.data), self.dimensions[1]))
+        rows = list(reversed(rows))
         data = b''
 
         for row in rows:
@@ -31,7 +31,7 @@ class BmpImage:
         Blue, Green, Red, one byte each, and an unused 4th byte
         """
 
-        colours: List[Tuple[int, int, int]] = batched(list(self.palette), 3)
+        colours = batched(list(self.palette), 3)
 
         # BMP palettes uses 4 bytes per colour
         # Blue, Green, Red, one byte each, and an unused 4th byte

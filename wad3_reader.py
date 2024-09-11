@@ -1,4 +1,3 @@
-from typing import Dict
 from pathlib import Path
 from struct import unpack
 from bmpimage import BmpImage
@@ -77,7 +76,7 @@ class Wad3Reader:
             directories = data[dir_offset:]
 
             self.dir_entries = []
-            self.textures: Dict[str, TextureEntry] = {}
+            self.textures: dict[str, TextureEntry] = {}
             for i in range(0, 32 * num_dir_entries, 32):
                 entry = DirEntry(directories[i:i+32])
                 self.dir_entries.append(entry)

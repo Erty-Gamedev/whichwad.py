@@ -1,4 +1,4 @@
-from typing import List, Dict, Final, Optional
+from typing import Final, Optional
 from pathlib import Path
 import fnmatch
 import typer
@@ -10,7 +10,7 @@ from wad3_reader import Wad3Reader
 __version__ = '1.1.0'
 
 STEAM_PIPES = ['_addon', '_hd', '_downloads']
-WAD_SKIP_LIST: Final[List[str]] = [
+WAD_SKIP_LIST: Final[list[str]] = [
     'cached',
     'fonts',
     'gfx',
@@ -42,8 +42,8 @@ def unsteampipe(modpath: Path) -> Path:
             return modpath.parent / modpath.stem.replace(pipe, '')
     return modpath
 
-def find_wad_files(modpath: Path) -> List[Path]:
-    globs: List[Path] = []
+def find_wad_files(modpath: Path) -> list[Path]:
+    globs: list[Path] = []
 
     game = modpath.parent
     mod = modpath.stem
@@ -57,10 +57,10 @@ def find_wad_files(modpath: Path) -> List[Path]:
     return [glob for glob in globs if glob.stem.lower() not in WAD_SKIP_LIST]
 
 def find_texture_in_wad(
-        globs: List[Path],
+        globs: list[Path],
         texture: str,
-        readers: Dict[str, Wad3Reader]) -> Dict[str, List[Wad3Reader]]:
-    found_wads: Dict[str, List[Wad3Reader]] = {}
+        readers: dict[Path, Wad3Reader]) -> dict[str, list[Wad3Reader]]:
+    found_wads: dict[str, list[Wad3Reader]] = {}
     
     for glob in globs:
         if glob not in readers:
@@ -102,8 +102,8 @@ def main(
     mod_path = unsteampipe(mod_path)
     globs = find_wad_files(mod_path)
     textures = texture.split(';')
-    all_found_wads: Dict[str, Dict[str, List[Wad3Reader]]] = {}
-    readers: Dict[str, Wad3Reader] = {}
+    all_found_wads: dict[str, dict[str, list[Wad3Reader]]] = {}
+    readers: dict[Path, Wad3Reader] = {}
 
     for tex in textures:
         found_wads = find_texture_in_wad(globs, tex, readers)

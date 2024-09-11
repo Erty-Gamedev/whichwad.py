@@ -9,5 +9,5 @@ PyInstaller.__main__.run([
     '--onefile',
     '-c',
     '-n', 'whichwad',
-    '--version-file', 'version_win.txt',
+    '--version-file', 'dist/version_win.txt',
 ])
